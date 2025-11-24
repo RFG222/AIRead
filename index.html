@@ -1,76 +1,116 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>OCR в Word</title>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.0.2/docx.umd.js"></script>
-<style>
-  video { width: 400px; height: 300px; border: 1px solid black; }
-  button { margin: 5px; padding: 10px; }
-  textarea { width: 400px; height: 150px; margin-top: 10px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лектор-Скан</title>
+    <script src='https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js'></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background: #f4f4f9; }
+        h2 { text-align: center; color: #333; }
+        
+        .control-panel { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        
+        /* Кнопка камеры */
+        input[type="file"] { display: none; }
+        .custom-file-upload {
+            border: 2px dashed #ccc; display: block; padding: 15px;
+            text-align: center; cursor: pointer; border-radius: 8px; font-weight: bold; color: #555; margin-bottom: 15px;
+        }
+        .custom-file-upload:active { background: #e1e1e1; }
+
+        /* Поле с текстом */
+        textarea {
+            width: 100%; height: 300px; padding: 10px; border: 1px solid #ccc;
+            border-radius: 8px; font-size: 16px; line-height: 1.5; margin-bottom: 15px;
+            box-sizing: border-box; /* Чтобы padding не ломал ширину */
+        }
+
+        /* Кнопка скачивания */
+        .btn-download {
+            background-color: #007bff; color: white; border: none; padding: 15px;
+            width: 100%; border-radius: 8px; font-size: 16px; cursor: pointer;
+        }
+        .btn-download:hover { background-color: #0056b3; }
+
+        /* Индикатор загрузки */
+        #status { text-align: center; margin-bottom: 10px; font-weight: bold; color: #d9534f; min-height: 20px;}
+        img { max-width: 100%; margin-bottom: 15px; border-radius: 8px; display: none; }
+    </style>
 </head>
 <body>
 
-<h2>Сфотографируй слайд и добавь текст в Word</h2>
+    <h2>📸 Лектор-Скан</h2>
 
-<video id="video" autoplay></video><br>
-<button id="snap">Сделать фото</button>
-<button id="download">Скачать Word</button>
+    <div class="control-panel">
+        <label for="file-upload" class="custom-file-upload">
+            📷 Сделать фото / Выбрать слайд
+        </label>
+        <input id="file-upload" type="file" accept="image/*" capture="environment">
 
-<canvas id="canvas" style="display:none;"></canvas>
-<textarea id="textArea" placeholder="Тут будет собранный текст"></textarea>
+        <img id="preview" src="" alt="Preview">
 
-<script>
-let allText = "";
+        <div id="status"></div>
 
-const video = document.getElementById('video');
-const canvas = document.getElementById('canvas');
-const textArea = document.getElementById('textArea');
+        <textarea id="result-text" placeholder="Здесь появится текст. Ты сможешь его исправить..."></textarea>
 
-// Включаем камеру
-navigator.mediaDevices.getUserMedia({ video: true })
-  .then(stream => video.srcObject = stream)
-  .catch(err => alert("Ошибка доступа к камере: " + err));
+        <button class="btn-download" onclick="downloadWord()">💾 Скачать в Word</button>
+    </div>
 
-document.getElementById('snap').addEventListener('click', async () => {
-    // Снимок
-    const context = canvas.getContext('2d');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    <script>
+        const fileInput = document.getElementById('file-upload');
+        const status = document.getElementById('status');
+        const textArea = document.getElementById('result-text');
+        const preview = document.getElementById('preview');
 
-    // OCR
-    const { data: { text } } = await Tesseract.recognize(canvas, 'rus');
-    const cleanText = text.replace(/\s+$/g, ''); // убираем лишние пробелы
-    allText += cleanText + "\n\n";
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
 
-    // Показываем текст
-    textArea.value = allText;
-});
+            // 1. Показываем картинку
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = 'block';
+            
+            // 2. Говорим пользователю ждать
+            status.innerText = "⏳ Распознаю текст... Подожди 5-10 сек...";
+            
+            // 3. Запускаем Tesseract (OCR)
+            // 'rus+eng' значит искать и русский и английский текст
+            Tesseract.recognize(
+                file,
+                'rus+eng', 
+                { logger: m => console.log(m) }
+            ).then(({ data: { text } }) => {
+                // 4. Когда готово - вставляем текст
+                status.innerText = "✅ Готово! Проверь ошибки.";
+                // Добавляем новый текст к старому (если фоткаем несколько слайдов подряд)
+                textArea.value += text + "\n\n--- СЛЕДУЮЩИЙ СЛАЙД ---\n\n";
+            }).catch(err => {
+                status.innerText = "❌ Ошибка: " + err;
+            });
+        });
 
-// Скачивание Word
-document.getElementById('download').addEventListener('click', async () => {
-    const { Document, Packer, Paragraph } = window.docx;
-
-    const doc = new Document({
-        sections: [{
-            properties: {},
-            children: allText.split("\n").map(line => new Paragraph(line))
-        }]
-    });
-
-    const blob = await Packer.toBlob(doc);
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = "document.docx";
-    a.click();
-    URL.revokeObjectURL(url);
-});
-</script>
-
+        // Функция скачивания
+        function downloadWord() {
+            const text = textArea.value;
+            // Создаем простой HTML файл, который Word умеет открывать
+            const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' "+
+                "xmlns:w='urn:schemas-microsoft-com:office:word' "+
+                "xmlns='http://www.w3.org/TR/REC-html40'>"+
+                "<head><meta charset='utf-8'><title>Export HTML to Word Document with JavaScript</title></head><body>";
+            const footer = "</body></html>";
+            
+            // Заменяем переносы строк на html теги
+            const sourceHTML = header+text.replace(/\n/g, "<br>")+footer;
+            
+            const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+            const fileDownload = document.createElement("a");
+            document.body.appendChild(fileDownload);
+            fileDownload.href = source;
+            fileDownload.download = 'lectures.doc';
+            fileDownload.click();
+            document.body.removeChild(fileDownload);
+        }
+    </script>
 </body>
 </html>
