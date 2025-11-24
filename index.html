@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>✨ Финальный AI Конспект</title>
+    <title>✨ Финальный AI Конспект (Исправлено)</title>
     <script type="importmap">
       {
         "imports": {
@@ -12,7 +12,25 @@
       }
     </script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; max-width: 650px; margin: 0 auto; background: #f0f4f8; color: #333; }
+        /* ======================================= */
+        /* === АКАДЕМИЧЕСКОЕ ФОРМАТИРОВАНИЕ === */
+        /* ======================================= */
+        body { 
+            font-family: 'Times New Roman', serif; 
+            font-size: 14pt; /* Основной текст 14pt */
+            padding: 20px; max-width: 650px; margin: 0 auto; background: #f0f4f8; color: #333; 
+        }
+
+        /* Заголовки (h1, h2, h3) */
+        h1, h2, h3 { 
+            font-family: 'Times New Roman', serif;
+            font-size: 16pt; /* Заголовки 16pt */
+            color: #1e88e5; /* Сохраняем цвет для красоты */
+            margin-bottom: 15px; 
+            margin-top: 25px;
+        }
+
+        /* Остальные общие стили */
         h2 { text-align: center; color: #1e88e5; margin-bottom: 25px; }
         .container { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
         
@@ -25,12 +43,34 @@
         .file-upload:active { background: #bbdefb; }
         input[type="file"] { display: none; }
 
+        /* Панель редактирования */
+        .editor-toolbar {
+            display: flex; gap: 10px; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 10px;
+        }
+        .editor-toolbar button {
+            background: #f8f8f8; color: #333; border: 1px solid #ddd; padding: 8px 12px;
+            border-radius: 6px; font-size: 1em; cursor: pointer; transition: background 0.1s;
+        }
+        .editor-toolbar button:hover {
+            background: #e0e0e0;
+        }
+        .editor-toolbar .clear-btn {
+            margin-left: auto;
+            background: #ffdbdb;
+            color: #d32f2f;
+        }
+        .editor-toolbar .clear-btn:hover {
+            background: #ffcdd2;
+        }
+
         /* Поле результата (редактируемое) */
         #result-area {
             width: 100%; min-height: 250px; padding: 15px; border: 1px solid #ddd;
-            border-radius: 10px; font-size: 16px; line-height: 1.6; background: #fafafa;
-            margin-bottom: 15px; white-space: pre-wrap; outline: none; box-sizing: border-box;
-            resize: vertical; /* Позволяет менять размер */
+            border-radius: 10px; 
+            font-size: 14pt; /* Указываем 14pt для текстового поля */
+            line-height: 1.6; background: #fafafa;
+            margin-bottom: 15px; outline: none; box-sizing: border-box;
+            resize: vertical;
         }
 
         button.save-btn {
@@ -62,11 +102,19 @@
         <div id="loader">⚡ Обработка началась. Ожидайте...</div>
         <div id="error-msg" class="error"></div>
         
-        <div id="result-area" contenteditable="true">После обработки здесь появится чистый, исправленный и отформатированный конспект.</div>
+        <div class="editor-toolbar">
+            <button onclick="formatText('bold')">Ж (Bold)</button>
+            <button onclick="formatText('italic')">К (Italic)</button>
+            <button onclick="formatText('insertOrderedList')">1. 2. 3.</button>
+            <button onclick="formatText('insertUnorderedList')">• • •</button>
+            <button class="clear-btn" onclick="clearContent()">🗑️ Очистить конспект</button>
+        </div>
+        
+        <div id="result-area" contenteditable="true"></div>
 
         <button class="save-btn" onclick="saveDoc()">💾 Скачать в Word (.doc)</button>
 
-        <small>Активная модель: <b id="active-model">gemini-pro</b> | API-ключ не должен быть публичным!</small>
+        <small>Активная модель: <b id="active-model">gemini-2.5-flash</b> | API-ключ не должен быть публичным!</small>
     </div>
 
     <script type="module">
@@ -74,11 +122,10 @@
 
         // =========================================================
         // !!! ВСТАВЬТЕ СЮДА ВАШ СЕКРЕТНЫЙ API KEY !!!
-        const API_KEY = "AIzaSyB1O8MLw6IVmsZlpVbKwhvJP8trLwY2zwM"; 
+        const API_KEY = "AIzaSyB1O8MLw6IVmsZlpVbKwhvJP8trLwY2zwM";
         // =========================================================
 
         const genAI = new GoogleGenerativeAI(API_KEY);
-        // Используем самую стабильную модель для предотвращения 404
         const MODEL_NAME = "gemini-2.5-flash";
 
         const fileInput = document.getElementById('fileInput');
@@ -88,7 +135,21 @@
         const errorMsg = document.getElementById('error-msg');
         const activeModelDisplay = document.getElementById('active-model');
 
-        activeModelDisplay.innerText = MODEL_NAME; // Отображаем модель на странице
+        activeModelDisplay.innerText = MODEL_NAME;
+        
+        // --- ФУНКЦИИ МЕНЮ РЕДАКТИРОВАНИЯ ---
+        window.formatText = function(command) {
+            document.execCommand(command, false, null);
+            resultArea.focus();
+        }
+        
+        window.clearContent = function() {
+            if (confirm("Вы уверены, что хотите полностью очистить весь конспект?")) {
+                resultArea.innerHTML = '';
+                resultArea.style.opacity = "1";
+            }
+        }
+        // ------------------------------------
 
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
@@ -99,34 +160,28 @@
             preview.style.display = 'block';
             loader.style.display = 'block';
             errorMsg.style.display = 'none';
-            resultArea.innerHTML = "⏳ Ожидание ответа от нейросети...";
-            resultArea.style.opacity = "0.5";
+            resultArea.style.opacity = "0.7";
+
+            let text = "";
 
             try {
-                // 1. Конвертируем файл в Base64 для передачи API
                 const base64Data = await fileToGenerativePart(file);
-                
-                // 2. Инициализация модели
                 const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
-                // 3. Промпт: четкая инструкция по транскрипции и форматированию
                 const prompt = `Ты - продвинутый помощник студента, специализирующийся на конспектах.
                 Проанализируй предоставленное изображение (слайд, доска или рукописный текст).
                 Твои задачи:
                 1. Распознай весь видимый текст, включая русский и английский.
                 2. Если текст неразборчив (из-за плохого качества фото или почерка), восстанови его по смыслу, исходя из общих знаний.
                 3. Исправь грамматические и орфографические ошибки.
-                4. Оформи результат в виде аккуратного конспекта, используя маркированные списки, заголовки (#, ##) и выделение жирным шрифтом для ключевых терминов.
-                Не добавляй никаких вводных фраз типа "Вот ваш конспект" или "Распознанный текст:". Выдай только чистый, готовый конспект.`;
+                4. **Оформи результат строго в формате HTML**, используя теги <h1> (для главных тем), <h2> (для подразделов), <b> (для выделения ключевых терминов), <ul> и <li> (для списков).
+                5. Выделяй важные моменты жирным шрифтом (<b>).
+                6. Не добавляй никаких разделителей, пустых строк или символов между конспектами слайдов. Выдай только чистый, готовый конспект в формате HTML.`;
 
                 const result = await model.generateContent([prompt, base64Data]);
                 const response = await result.response;
-                const text = response.text();
-
-                // 4. Добавляем текст к предыдущему конспекту
-                const currentText = resultArea.innerText.includes("Текст появится здесь...") ? "" : resultArea.innerText;
-                resultArea.innerText = currentText + "\n\n---\n\n" + text;
-                resultArea.style.opacity = "1";
+                text = response.text();
+                
             } catch (error) {
                 console.error("API Error:", error);
                 let msg = error.message;
@@ -137,13 +192,22 @@
 
                 errorMsg.innerText = "❌ Проблема: " + msg;
                 errorMsg.style.display = 'block';
-                resultArea.innerHTML = "Попробуйте еще раз или проверьте подключение/VPN.";
+                text = `<b><p>[Ошибка загрузки. Попробуйте снова. ${msg}]</p></b>`; 
             } finally {
                 loader.style.display = 'none';
+                
+                // 4. ДОБАВЛЕНИЕ ТЕКСТА
+                const currentContent = resultArea.innerHTML.trim();
+                
+                // Добавляем перенос строки, только если это не первый слайд
+                // Используем <p> с отступом для нового блока
+                const separator = currentContent.length > 0 ? "<p>&nbsp;</p>" : ""; 
+                
+                resultArea.innerHTML = currentContent + separator + text;
+                resultArea.style.opacity = "1";
             }
         });
 
-        // Функция превращения файла в формат для AI
         async function fileToGenerativePart(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -156,16 +220,21 @@
 
         // Функция скачивания текста в файл .doc
         window.saveDoc = function() {
-            const text = document.getElementById('result-area').innerText;
-            // Создаем простой HTML, который Word может открыть как документ
-            const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Конспект</title></head><body>";
+            // Для Word-документа используем HTML-код, который уже содержит стили и теги
+            const sourceHTML = document.getElementById('result-area').innerHTML;
+            
+            // Встраиваем стили Times New Roman прямо в HTML-заголовок для совместимости с Word
+            const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Конспект</title>
+                <style>
+                    body { font-family: 'Times New Roman', serif; font-size: 14pt; }
+                    h1, h2, h3 { font-size: 16pt; }
+                </style>
+                </head><body>`;
             const footer = "</body></html>";
             
-            // Превращаем переводы строк в теги <br> для HTML/Word
-            const sourceHTML = header + text.replace(/\n/g, "<br>") + footer;
+            const fullHTML = header + sourceHTML + footer;
             
-            // Создаем Blob и скачиваем его
-            const blob = new Blob(['\ufeff' + sourceHTML], { type: 'application/msword' });
+            const blob = new Blob(['\ufeff' + fullHTML], { type: 'application/msword' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -175,4 +244,3 @@
     </script>
 </body>
 </html>
-
