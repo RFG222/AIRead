@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>OCR в Word</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.0.2/docx.umd.js"></script>
+<style>
+  video { width: 400px; height: 300px; border: 1px solid black; }
+  button { margin: 5px; padding: 10px; }
+  textarea { width: 400px; height: 150px; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<h2>Сфотографируй слайд и добавь текст в Word</h2>
+
+<video id="video" autoplay></video><br>
+<button id="snap">Сделать фото</button>
+<button id="download">Скачать Word</button>
+
+<canvas id="canvas" style="display:none;"></canvas>
+<textarea id="textArea" placeholder="Тут будет собранный текст"></textarea>
+
+<script>
+let allText = "";
+
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const textArea = document.getElementById('textArea');
+
+// Включаем камеру
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => video.srcObject = stream)
+  .catch(err => alert("Ошибка доступа к камере: " + err));
+
+document.getElementById('snap').addEventListener('click', async () => {
+    // Снимок
+    const context = canvas.getContext('2d');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // OCR
+    const { data: { text } } = await Tesseract.recognize(canvas, 'rus');
+    const cleanText = text.replace(/\s+$/g, ''); // убираем лишние пробелы
+    allText += cleanText + "\n\n";
+
+    // Показываем текст
+    textArea.value = allText;
+});
+
+// Скачивание Word
+document.getElementById('download').addEventListener('click', async () => {
+    const { Document, Packer, Paragraph } = window.docx;
+
+    const doc = new Document({
+        sections: [{
+            properties: {},
+            children: allText.split("\n").map(line => new Paragraph(line))
+        }]
+    });
+
+    const blob = await Packer.toBlob(doc);
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "document.docx";
+    a.click();
+    URL.revokeObjectURL(url);
+});
+</script>
+
+</body>
+</html>
