@@ -1,344 +1,334 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Лекции</title> 
-    <script type="importmap">
-      {
-        "imports": {
-          "@google/generative-ai": "https://esm.run/@google/generative-ai"
-        }
-      }
-    </script>
-    <style>
-        /* ======================================= */
-        /* === ОБЩИЙ СТИЛЬ И ТЕМНЫЙ ФОН === */
-        /* ======================================= */
-        body { 
-            font-family: 'Times New Roman', serif; 
-            font-size: 14pt;
-            padding: 20px; 
-            max-width: 750px; 
-            margin: 0 auto; 
-            background: #1a1a1a; /* Основной темно-серый фон */
-            color: #f5f5f5; /* Светлый текст */
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+/* ======================================= */
+/* === ОСНОВНЫЕ СТИЛИ И ФИКСАЦИЯ ВЫСОТЫ === */
+/* ======================================= */
+html, body {
+    height: 100%; 
+    margin: 0;
+    padding: 0;
+}
 
-        .container { 
-            background: #252525; /* Темно-коричневый фон контейнера */
-            padding: 35px; 
-            border-radius: 12px; 
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5); /* Глубокая тень */
-            width: 100%;
-            margin-top: 30px;
-            border: 1px solid #333; /* Тонкая рамка */
-        }
-        
-        /* ======================================= */
-        /* === ЗАГОЛОВКИ И ШРИФТЫ === */
-        /* ======================================= */
-        h2 { 
-            text-align: center; 
-            color: #e0b973; /* Золотистый акцентный цвет */
-            margin-bottom: 30px; 
-            font-size: 24pt; 
-            font-weight: 400; 
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-
-        /* Заголовки конспекта (h1, h2, h3) */
-        h1, h2, h3 { 
-            font-family: 'Times New Roman', serif;
-            font-size: 16pt;
-            color: #f0f0f0; /* Светлый заголовок внутри конспекта */
-            margin-bottom: 10px; 
-            margin-top: 25px;
-        }
-
-        /* ======================================= */
-        /* === ПОЛЕ ЗАГРУЗКИ / КНОПКИ === */
-        /* ======================================= */
-        .file-upload {
-            border: 2px dashed #444; 
-            padding: 30px; 
-            text-align: center; 
-            cursor: pointer;
-            border-radius: 8px; 
-            background: #333; 
-            color: #e0b973; /* Золотистый текст акцента */
-            font-weight: 600;
-            display: block; 
-            margin-bottom: 25px; 
-            font-size: 1.2em; 
-            transition: all 0.2s ease;
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
-        }
-        .file-upload:hover { 
-            background: #404040; 
-            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.4);
-        }
-        input[type="file"] { display: none; }
-
-        /* Панель редактирования */
-        .editor-toolbar {
-            display: flex; 
-            gap: 8px; 
-            margin-bottom: 15px; 
-            border-bottom: 1px solid #333; 
-            padding-bottom: 10px;
-        }
-        .editor-toolbar button {
-            background: #333; 
-            color: #f5f5f5; 
-            border: 1px solid #555; 
-            padding: 8px 15px;
-            border-radius: 4px; 
-            font-size: 1em; 
-            cursor: pointer; 
-            transition: background 0.2s, color 0.2s;
-        }
-        .editor-toolbar button:hover {
-            background: #e0b973; /* Золотистый акцент на кнопках */
-            color: #1a1a1a;
-        }
-        .editor-toolbar .clear-btn {
-            margin-left: auto;
-            background: #dc3545;
-            color: white;
-            border-color: #dc3545;
-        }
-        .editor-toolbar .clear-btn:hover {
-            background: #c82333;
-        }
-
-        /* Поле результата (редактируемое) */
-        #result-area {
-            width: 100%; 
-            min-height: 350px;
-            padding: 20px; 
-            border: 1px solid #444;
-            border-radius: 8px; 
-            font-size: 14pt; 
-            line-height: 1.6; 
-            background: #1f1f1f; /* Очень темный фон для поля */
-            color: #f5f5f5; /* Светлый текст внутри поля */
-            margin-bottom: 25px; 
-            outline: none; 
-            box-sizing: border-box;
-            resize: vertical;
-            transition: box-shadow 0.3s, border-color 0.3s;
-        }
-        #result-area:focus {
-            box-shadow: 0 0 0 2px #e0b973; /* Золотистая подсветка при фокусе */
-            border-color: #e0b973;
-        }
-
-        button.save-btn {
-            background: #e0b973; /* Золотистая кнопка сохранения */
-            color: #1a1a1a; 
-            border: none; 
-            padding: 18px; 
-            width: 100%;
-            border-radius: 8px; 
-            font-size: 1.1em; 
-            font-weight: bold; 
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-            box-shadow: 0 4px 10px rgba(224, 185, 115, 0.4);
-        }
-        button.save-btn:hover { 
-            background: #c9a764; 
-            transform: translateY(-1px);
-        }
-
-        /* Стиль для индикаторов и ошибок */
-        img#preview { max-width: 100%; border-radius: 8px; margin-bottom: 20px; display: none; border: 1px solid #444;}
-        #loader { text-align: center; display: none; font-weight: bold; color: #e0b973; margin: 15px 0; font-size: 1.1em; }
-        .error { color: #f8d7da; background: #c82333; padding: 12px; border-radius: 8px; margin-bottom: 15px; display: none; border-left: 5px solid #ff4d4d; border-color: #c82333;}
-    </style>
-</head>
-<body>
-
-    <h2>AI Лекции</h2>
+body { 
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 14pt;
+    padding: 20px; 
+    background: #121212;
+    color: #f5f5f5; 
+    box-sizing: border-box; 
     
-    <div class="container">
-        <label for="fileInput" class="file-upload">
-            📷 Нажмите, чтобы сфотографировать или выбрать слайд
-        </label>
-        <input type="file" id="fileInput" accept="image/*" capture="environment">
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto; 
+}
 
-        <img id="preview" src="">
-        
-        <div id="loader">⚡ Обработка началась. Ожидайте...</div>
-        <div id="error-msg" class="error"></div>
-        
-        <div class="editor-toolbar">
-            <button onclick="formatText('bold')">Ж (Bold)</button>
-            <button onclick="formatText('italic')">К (Italic)</button>
-            <button onclick="formatText('insertOrderedList')">1. 2. 3.</button>
-            <button onclick="formatText('insertUnorderedList')">• • •</button>
-            <button class="clear-btn" onclick="clearContent()">🗑️ Очистить конспект</button>
-        </div>
-        
-        <div id="result-area" contenteditable="true"></div>
+h2 { 
+    flex-shrink: 0; 
+    text-align: center; 
+    color: #e0b973; 
+    margin-bottom: 20px; 
+    font-size: 24pt; 
+    font-weight: 400; 
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
 
-        <button class="save-btn" onclick="saveDoc()">💾 Скачать в Word (.doc)</button>
-    </div>
+/* --- КОНТЕЙНЕР --- */
+.container { 
+    background: #1f1f1f;
+    padding: 30px; 
+    border-radius: 12px; 
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.7);
+    border: 1px solid #333; 
+    position: relative;
+    width: 100%;
+    max-width: 750px; 
+    transition: all 0.3s ease-in-out;
+    
+    display: flex;
+    flex-direction: column; 
+    gap: 15px;
+    flex-grow: 1; 
+    min-height: 0; 
+    margin-bottom: 20px;
+}
 
-    <script type="module">
-        import { GoogleGenerativeAI } from "@google/generative-ai";
+/* --- ПАНЕЛИ (Общие) --- */
+.panel-left {
+    width: 100%;
+    transition: width 0.3s;
+    flex-shrink: 0;
+}
+.panel-right {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-height: 0; 
+}
 
-        // =========================================================
-        // !!! ВСТАВЬТЕ СЮДА ВАШ СЕКРЕТНЫЙ API KEY !!!
-        const API_KEY = "AIzaSyBB7WQImDYJdO-AX7tvxFLKBubbeX6H5ro";
-        // =========================================================
 
-        const genAI = new GoogleGenerativeAI(API_KEY);
-        const MODEL_NAME = "gemini-2.5-flash";
+/* --- РЕЖИМ "SPLIT" (ДВЕ КОЛОНКИ) --- */
+.container.split-mode {
+    max-width: 95vw; 
+    flex-direction: row; 
+    height: 90vh; 
+    flex-grow: 0; 
+    align-items: stretch;
+    margin-top: 0;
+}
 
-        const fileInput = document.getElementById('fileInput');
-        const resultArea = document.getElementById('result-area');
-        const loader = document.getElementById('loader');
-        const preview = document.getElementById('preview');
-        const errorMsg = document.getElementById('error-msg');
-        
-        // --- ФУНКЦИИ МЕНЮ РЕДАКТИРОВАНИЯ ---
-        window.formatText = function(command) {
-            document.execCommand(command, false, null);
-            resultArea.focus();
-        }
-        
-        window.clearContent = function() {
-            if (confirm("Вы уверены, что хотите полностью очистить весь конспект?")) {
-                resultArea.innerHTML = '';
-                resultArea.style.opacity = "1";
-            }
-        }
-        // ------------------------------------
+.container.split-mode .panel-left {
+    width: 50%;
+    min-width: 300px;
+    border-right: 1px solid #444;
+    padding-right: 20px;
+    overflow-y: auto; 
+    flex-grow: 0;
+    flex-shrink: 0;
+}
 
-        fileInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+.container.split-mode .panel-right {
+    width: 50%;
+    min-width: 300px;
+    padding-left: 20px;
+    flex-grow: 1;
+    flex-shrink: 1;
+    height: 100%;
+    min-height: 0; 
+}
 
-            // Сброс и индикация
-            preview.src = URL.createObjectURL(file);
-            preview.style.display = 'block';
-            loader.style.display = 'block';
-            errorMsg.style.display = 'none';
-            resultArea.style.opacity = "0.7";
+/* --- КНОПКА ПЕРЕКЛЮЧЕНИЯ ВИДА --- */
+.layout-toggle-btn {
+    position: absolute;
+    top: 15px; 
+    right: 15px;
+    background: #333; color: #e0b973; border: 1px solid #555;
+    width: 35px; height: 35px; border-radius: 6px;
+    font-size: 1.1em; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; z-index: 100;
+}
+.layout-toggle-btn:hover { background: #444; }
 
-            let text = "";
-            let base64Data; 
 
-            try {
-                // Используем функцию сжатия для ускорения на мобильных
-                base64Data = await compressAndConvertFile(file);
-                
-                const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+/* ======================================= */
+/* === СТИЛИ КНОПКИ ПОМОЩИ И МОДАЛЬНОГО ОКНА === */
+/* ======================================= */
 
-                const prompt = `Ты - продвинутый помощник студента, специализирующийся на конспектах.
-                Проанализируй предоставленное изображение (слайд, доска или рукописный текст).
-                Твои задачи:
-                1. Распознай весь видимый текст, включая русский и английский.
-                2. Если текст неразборчив (из-за плохого качества фото или почерка), восстанови его по смыслу, исходя из общих знаний.
-                3. Исправь грамматические и орфографические ошибки.
-                4. **Оформи результат строго в формате HTML**, используя теги <h1> (для главных тем), <h2> (для подразделов), <b> (для выделения ключевых терминов), <ul> и <li> (для списков).
-                5. Выделяй важные моменты жирным шрифтом (<b>).
-                6. Не добавляй никаких разделителей, пустых строк или символов между конспектами слайдов. Выдай только чистый, готовый конспект в формате HTML.`;
+#help-btn {
+    position: fixed;
+    top: 20px; 
+    left: 20px;
+    background: #333;
+    color: #e0b973; 
+    border: 1px solid #555;
+    width: 35px; 
+    height: 35px; 
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2em;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+#help-btn:hover {
+    background: #e0b973;
+    color: #1a1a1a;
+    transform: scale(1.1);
+}
 
-                const result = await model.generateContent([prompt, base64Data]);
-                const response = await result.response;
-                text = response.text();
-                
-            } catch (error) {
-                console.error("API Error:", error);
-                let msg = error.message;
-                
-                if (msg.includes("400") && msg.includes("User location")) msg = "❌ Региональная блокировка: VPN не скрывает вашу геолокацию. Попробуйте режим Инкогнито или другой сервер VPN.";
-                if (msg.includes("404")) msg = "Ошибка 404: Модель не найдена. Попробуй заменить MODEL_NAME в коде на 'gemini-pro'.";
-                if (msg.includes("403") || msg.includes("Key")) msg = "Ошибка 403: Проверь API Key и баланс на Google AI Studio.";
-                if (msg.includes("Load failed") || msg.includes("Failed to fetch")) msg = "❌ Ошибка сети: Нет интернета или VPN слишком медленный.";
+.modal {
+    display: none;
+    position: fixed; 
+    z-index: 2000; 
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.8);
+}
 
-                errorMsg.innerText = "❌ Проблема: " + msg;
-                errorMsg.style.display = 'block';
-                text = `<b><p>[Ошибка загрузки. Попробуйте снова. ${msg}]</p></b>`; 
-            } finally {
-                loader.style.display = 'none';
-                
-                // 4. ДОБАВЛЕНИЕ ТЕКСТА
-                const currentContent = resultArea.innerHTML.trim();
-                
-                // Добавляем перенос строки
-                const separator = currentContent.length > 0 ? "<p>&nbsp;</p>" : ""; 
-                
-                resultArea.innerHTML = currentContent + separator + text;
-                resultArea.style.opacity = "1";
-            }
-        });
+.modal-content {
+    background-color: #1f1f1f;
+    margin: 5% auto;
+    padding: 30px;
+    border: 1px solid #333;
+    width: 80%; 
+    max-width: 700px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+    color: #f5f5f5;
+}
+.modal-content h3 {
+    color: #e0b973;
+    border-bottom: 1px solid #444;
+    padding-bottom: 10px;
+    margin-top: 0;
+    font-size: 1.5em;
+}
+.modal-content p, .modal-content li {
+    font-size: 12pt;
+    line-height: 1.6;
+}
+.modal-content strong {
+    color: #e0b973;
+}
 
-        async function compressAndConvertFile(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const MAX_WIDTH = 1024;
-                        let width = img.width;
-                        let height = img.height;
+.close-btn {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    transition: color 0.2s;
+}
+.close-btn:hover,
+.close-btn:focus {
+    color: #e0b973;
+    text-decoration: none;
+    cursor: pointer;
+}
+hr {
+    border-top: 1px solid #444; 
+    margin: 20px 0;
+}
 
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
 
-                        const canvas = document.createElement('canvas');
-                        canvas.width = width;
-                        canvas.height = height;
+/* ======================================= */
+/* === Стили элементов интерфейса === */
+/* ======================================= */
 
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
+.file-upload {
+    border: 2px dashed #444; 
+    padding: 25px; 
+    text-align: center; 
+    cursor: pointer;
+    border-radius: 6px; 
+    background: #252525; 
+    color: #e0b973; 
+    font-weight: 600;
+    display: block; 
+    margin-bottom: 15px; 
+    font-size: 1.1em; 
+    transition: all 0.2s ease;
+}
+.file-upload:hover { 
+    background: #2e2e2e; 
+    border-color: #e0b973; 
+}
 
-                        // Сжимаем и кодируем в JPEG 
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.8); 
-                        
-                        resolve({
-                            inlineData: { data: dataUrl.split(',')[1], mimeType: 'image/jpeg' },
-                        });
-                    };
-                    img.onerror = reject;
-                    img.src = event.target.result;
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-        }
+img#preview { max-width: 100%; border-radius: 6px; display: none; border: 1px solid #444; flex-shrink: 0; }
+input[type="file"] { display: none; }
 
-        window.saveDoc = function() {
-            const sourceHTML = document.getElementById('result-area').innerHTML;
-            
-            const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Конспект</title>
-                <style>
-                    body { font-family: 'Times New Roman', serif; font-size: 14pt; }
-                    h1, h2, h3 { font-size: 16pt; }
-                </style>
-                </head><body>`;
-            const footer = "</body></html>";
-            
-            const fullHTML = header + sourceHTML + footer;
-            
-            const blob = new Blob(['\ufeff' + fullHTML], { type: 'application/msword' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Конспект_${new Date().toLocaleDateString('ru-RU')}.doc`;
-            a.click();
-        }
-    </script>
-</body>
-</html>
+.editor-toolbar {
+    flex-shrink: 0; 
+    display: flex; 
+    gap: 5px; 
+    margin-bottom: 10px; 
+    border-bottom: 1px solid #333; 
+    padding-bottom: 10px;
+}
+.editor-toolbar button {
+    background: #333; 
+    color: #f5f5f5; 
+    border: none; 
+    padding: 8px 12px; 
+    border-radius: 4px; 
+    cursor: pointer;
+    font-weight: bold;
+    font-style: normal;
+    transition: background 0.2s;
+}
+.editor-toolbar button:hover { 
+    background: #e0b973; 
+    color: #1a1a1a; 
+}
+.editor-toolbar .clear-btn { 
+    margin-left: auto; 
+    background: #dc3545; 
+    color: white;
+    font-size: 1em;
+    padding: 8px 15px;
+}
+
+#result-area {
+    width: 100%; 
+    padding: 20px; 
+    border: 1px solid #444;
+    border-radius: 6px; 
+    font-size: 14pt; 
+    line-height: 1.6; 
+    background: #121212; 
+    color: #f5f5f5; 
+    outline: none; 
+    box-sizing: border-box;
+    margin-bottom: 10px; 
+    
+    flex-grow: 1; 
+    min-height: 300px; 
+    overflow: auto; /* Финальное исправление: позволяет видеть ручку resize */
+    resize: vertical; /* Разрешить растягивать окно по высоте */
+}
+
+button.action-btn { 
+    flex-shrink: 0; 
+    width: 100%; 
+    padding: 14px; 
+    border-radius: 6px; 
+    font-size: 1.1em; 
+    font-weight: bold; 
+    cursor: pointer; 
+    border: none; 
+    margin-top: 5px;
+    transition: background 0.2s, transform 0.1s;
+}
+
+button.save-btn { 
+    background: #e0b973; 
+    color: #1a1a1a; 
+}
+button.save-btn:hover { 
+    background: #c9a764; 
+    transform: translateY(-1px);
+}
+
+button.shrink-btn { 
+    background: #444; 
+    color: #f5f5f5; 
+    border: 1px solid #555; 
+}
+button.shrink-btn:hover { 
+    background: #555;
+    transform: translateY(-1px);
+}
+
+#loader { text-align: center; display: none; font-weight: bold; color: #e0b973; margin: 15px 0; }
+.error { color: #f8d7da; background: #c82333; padding: 12px; border-radius: 6px; margin-bottom: 15px; display: none; }
+.file-upload.disabled, button:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+
+
+/* ======================================= */
+/* === АДАПТИВНОСТЬ: МОБИЛЬНЫЙ ВИД (< 750px) === */
+/* ======================================= */
+
+@media (max-width: 750px) {
+    .panel-right {
+        min-height: 70vh; 
+    }
+    
+    #result-area {
+        min-height: 250px;
+    }
+    
+    .panel-left {
+        min-height: auto;
+        max-height: 40vh; 
+        overflow-y: auto; 
+    }
+
+    .layout-toggle-btn {
+        display: none;
+    }
+}
