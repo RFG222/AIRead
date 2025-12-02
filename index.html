@@ -3,96 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Лекции</title> 
-
-    <link rel="stylesheet" href="style.css"> 
-
-    <script type="importmap">
-      {
-        "imports": {
-          "@google/generative-ai": "https://esm.run/@google/generative-ai"
-        }
-      }
-    </script>
+    <title>AI Лекции</title>
+    
+    <script src="https://unpkg.com/@google/genai@0.1.0/dist/client.umd.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <button id="help-btn" onclick="openModal()">?</button>
-    <div id="helpModal" class="modal">
-      <div class="modal-content">
-        <span class="close-btn" onclick="closeModal()">&times;</span>
-        <h3>💡 AI Лекции: Ваш умный помощник</h3>
-        
-        <p>Этот инструмент использует нейросеть **Gemini** для преобразования изображений (слайдов, рукописных конспектов, заметок) в чистый, структурированный и готовый к печати или дальнейшему редактированию текст.</p>
+    <button id="help-btn" title="Справка">?</button>
 
-        <hr>
+    <h2>AI ЛЕКЦИИ</h2>
 
-        <h4>Возможности сервиса</h4>
-        <p>Сервис "AI Лекции" создан не только для студентов, но и для всех, кому нужно быстро перевести визуальную информацию в цифровой вид:</p>
-        <ul>
-            <li>
-                <strong>Для студентов и учащихся:</strong>
-                Быстрое конспектирование лекций, презентаций и записей из тетрадей с автоматическим исправлением ошибок.
-            </li>
-            <li>
-                <strong>Для организации заметок:</strong>
-                Эффективное преобразование бумажных или сфотографированных документов в редактируемый цифровой формат.
-            </li>
-            <li>
-                <strong>Редактирование и форматирование:</strong>
-                Вы получаете текст, который можно сразу редактировать, форматировать (жирный, списки) и сохранять.
-            </li>
-        </ul>
-
-        <hr>
-
-        <h4>Как пользоваться (Пошаговая инструкция)</h4>
-        <ol>
-            <li><strong>Загрузка фото:</strong> Нажмите кнопку **"Загрузить фото"**.</li>
-            <li><strong>Анализ:</strong> Нейросеть **Gemini** проанализирует, распознает и оформит текст.</li>
-            <li><strong>Просмотр и редактирование:</strong> Текст появится справа. Вы можете его **редактировать** и форматировать.</li>
-            <li><strong>Смена вида:</strong> Кнопка в правом верхнем углу меняет режим отображения.</li>
-            <li><strong>Функции сохранения:</strong> **Сжать и Скачать** (сокращение на ~40%) или **Скачать Word** (полный текст).</li>
-            <li><strong>Очистка:</strong> Кнопка **X** удаляет весь текст из конспекта.</li>
-        </ol>
-      </div>
-    </div>
-
-
-    <h2>AI Лекции</h2>
-    
-    <div class="container" id="mainContainer">
-        <button class="layout-toggle-btn" id="toggleLayoutBtn" onclick="toggleLayout()" title="Переключить вид">
-            ◫
-        </button>
+    <div class="container" id="main-container">
 
         <div class="panel-left">
-            <label for="fileInput" id="uploadLabel" class="file-upload">
-                🖼️ Загрузить фото
+            <input type="file" id="file-input" accept="image/*" multiple>
+            
+            <label for="file-input" class="file-upload">
+                <span id="upload-text">📸 Нажмите, чтобы сфотографировать или выбрать слайд</span>
+                <span id="status-text" style="display: none;"></span>
             </label>
-            <input type="file" id="fileInput" accept="image/*" capture="environment" multiple>
-            <img id="preview" src="">
+
+            <img id="preview" alt="Превью загруженного изображения">
+
+            <div class="editor-toolbar" style="display: none;" id="editor-toolbar">
+                <button onclick="applyStyle('bold')">Ж (Bold)</button>
+                <button onclick="applyStyle('italic')">К (Italic)</button>
+                <button onclick="applyStyle('list')">1. 2. 3. ...</button>
+                <button class="clear-btn" onclick="clearResultArea()">Очистить конспект</button>
+            </div>
         </div>
 
         <div class="panel-right">
-            <div id="loader">⚡ Обработка...</div>
-            <div id="error-msg" class="error"></div>
-
-            <div class="editor-toolbar">
-                <button onclick="formatText('bold')">B</button>
-                <button onclick="formatText('italic')">I</button>
-                <button onclick="formatText('insertOrderedList')">1.</button>
-                <button onclick="formatText('insertUnorderedList')">U</button>
-                <button class="clear-btn" onclick="clearContent()">X</button>
-            </div>
             
-            <div id="result-area" contenteditable="true"></div>
+            <button class="layout-toggle-btn" title="Сменить вид" onclick="toggleLayout()">↔</button>
 
-            <button id="shrinkBtn" class="action-btn shrink-btn" onclick="shrinkAndSaveDoc()">✨ Сжать и Скачать (Сокращенный)</button>
-            <button id="saveBtn" class="action-btn save-btn" onclick="saveDoc()">💾 Скачать Word</button>
+            <div id="error-message" class="error"></div>
+            <div id="loader" style="display: none;"></div>
+            
+            <div id="result-area" contenteditable="true">
+                Здесь появится ваш конспект после обработки...
+            </div>
+
+            <button class="action-btn save-btn" id="shrink-and-save">
+                ✨ Сжать и Скачать (Сокращенный)
+            </button>
+            <button class="action-btn shrink-btn" id="save-word">
+                📄 Скачать Word
+            </button>
         </div>
     </div>
 
-    <script type="module" src="main.js"></script>
+    <div id="help-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h3>Справка по работе с AI Лекции</h3>
+            <p><strong>Цель:</strong> Автоматическое преобразование рукописного текста или слайдов лекций в редактируемый конспект.</p>
+            <hr>
+            <h4>Инструкция:</h4>
+            <ul>
+                <li><strong>Загрузка:</strong> Нажмите на область загрузки, чтобы выбрать изображение (фото конспекта или слайд).</li>
+                <li><strong>Обработка:</strong> Система отправит фото в модель Gemini для распознавания и перевода в структурированный текст. Дождитесь окончания "Обработки".</li>
+                <li><strong>Редактирование:</strong> Полученный текст можно редактировать прямо в поле ввода или использовать кнопки форматирования (Жирный, Курсив, Список).</li>
+                <li><strong>Действия:</strong>
+                    <ul>
+                        <li><span class="save-btn">Сжать и Скачать</span>: Сокращает полученный конспект и сохраняет его.</li>
+                        <li><span class="shrink-btn" style="background: #444; padding: 2px 5px; border-radius: 4px;">Скачать Word</span>: Сохраняет текущий текст в формате .docx.</li>
+                    </ul>
+                </li>
+                <li><strong>Вид:</strong> Используйте кнопку ↔ (в правом верхнем углу контейнера) для переключения между вертикальным (мобильным) и горизонтальным (split-mode) видами.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
 </body>
 </html>
